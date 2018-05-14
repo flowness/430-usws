@@ -32,6 +32,7 @@
  *
  * --/COPYRIGHT--*/
 #include <msp430.h>
+#include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,7 +48,12 @@
 extern int vsnprintf (char * s, size_t n, const char * format, va_list arg );
 
 USS_Algorithms_Results algorithms_Results;
+volatile Calendar newTime;
 
+uint8_t RXData = 0, TXData = 0;
+uint8_t check = 0;
+char pcBuffer[256]={0};
+int     iLen = 0;
 
 // reverses a string 'str' of length 'len'
 void reverse(char *str, int len)
@@ -61,7 +67,36 @@ void reverse(char *str, int len)
         i++; j--;
     }
 }
+// Converts a given integer x to string str[].  d is the number
+// of digits required in output. If d is more than the number
+// of digits in x, then 0s are added at the beginning.
+int longToStr(long x, char str[], int d)
+{
+   bool Negativ=false;
+   int i = 0;
+   if(x<0)
+   {
+       Negativ=true;
+       x*=-1;
+   }
 
+   while (x)
+   {
+       str[i++] = (x%10) + '0';
+       x/=10;
+   }
+
+   // If number of digits required is more, then
+   // add 0s at the beginning
+   while (i < d)
+       str[i++] = '0';
+
+   if(Negativ) str[i++]='-';
+
+   reverse(str, i);
+   str[i] = '\0';
+   return i;
+}
  // Converts a given integer x to string str[].  d is the number
  // of digits required in output. If d is more than the number
  // of digits in x, then 0s are added at the beginning.
@@ -91,6 +126,29 @@ int intToStr(int x, char str[], int d)
     reverse(str, i);
     str[i] = '\0';
     return i;
+}
+
+void dtoa(double n, char *res, int afterpoint)
+{
+    long ipart = (long)n;
+    double fpart = n - (double)ipart;
+    if(fpart<0) fpart*=-1;
+
+    // convert integer part to string
+    long i = longToStr(ipart, res, 0);
+
+    // check for display option after point
+    if (afterpoint != 0)
+    {
+        res[i] = '.';  // add dot
+
+        // Get the value of fraction part upto given no.
+        // of points after dot. The third parameter is needed
+        // to handle cases like 233.007
+        fpart = fpart * pow(10, afterpoint);
+
+        intToStr((int)fpart, res + i + 1, afterpoint);
+    }
 }
 
 // Converts a floating point number to string.
@@ -162,8 +220,7 @@ void Message(const char *str)
 int Report(const char *pcFormat, ...)
 {
     int         iRet = 0;
-    char        pcBuff[256];
-    char        *pcTemp;
+    char        pcBuff[256]={0};
     int         iSize = 256;
     va_list     list;
 
@@ -198,55 +255,68 @@ int Report(const char *pcFormat, ...)
 
     return iRet;
 }
-
+void PadString(char *buffer,uint8_t time)
+{
+    if(time<0x10)
+        sprintf(buffer,"0%x",time);
+    else
+        sprintf(buffer,"%x",time);
+}
 
 int main(void)
 {
     volatile USS_message_code code;
+    double totalVolume=0;
+    char    YearString[5]={0};
+    char    MonthString[3]={0};
+    char    DayString[3]={0};
+    char    HourString[3]={0};
+    char    MinuteString[3]={0};
+    char    SecondString[3]={0};
     char float_Result[32]={0};
+    char float_totalResult[32]={0};
+    Calendar currentTime;
+
     // Configure UART
 
-    // LFXT Setup
-    //Set PJ.4 and PJ.5 as Primary Module Function Input.
-    /*
-
-    * Select Port J
-    * Set Pin 4, 5 to input Primary Module Function, LFXT.
-
-    GPIO_setAsPeripheralModuleFunctionInputPin(
-        GPIO_PORT_PJ,
-        GPIO_PIN4 + GPIO_PIN5,
-        GPIO_PRIMARY_MODULE_FUNCTION
-    );
-
-    //Set DCO frequency to 1 MHz
-    CS_setDCOFreq(CS_DCORSEL_0,CS_DCOFSEL_0);
-    //Set external clock frequency to 32.768 KHz
-    CS_setExternalClockSource(32768,0);
-    //Set ACLK=LFXT
-    CS_initClockSignal(CS_ACLK,CS_LFXTCLK_SELECT,CS_CLOCK_DIVIDER_1);
-    //Set SMCLK = DCO with frequency divider of 1
-    CS_initClockSignal(CS_SMCLK,CS_DCOCLK_SELECT,CS_CLOCK_DIVIDER_1);
-    //Set MCLK = DCO with frequency divider of 1
-    CS_initClockSignal(CS_MCLK,CS_DCOCLK_SELECT,CS_CLOCK_DIVIDER_1);
-    //Start XT1 with no time out
-    CS_turnOnLFXT(CS_LFXT_DRIVE_0);
-  */
-    // Configure UART pins
-    //Set P2.0 and P2.1 as Secondary Module Function Input.
-    /*
-
-    * Select Port 2d
-    * Set Pin 0, 1 to input Secondary Module Function, (UCA0TXD/UCA0SIMO, UCA0RXD/UCA0SOMI).
-    */
+    // Uart to CC32 via Board interface
     GPIO_setAsPeripheralModuleFunctionInputPin(
     GPIO_PORT_P8,
     GPIO_PIN2+GPIO_PIN3,
     GPIO_PRIMARY_MODULE_FUNCTION
     );
 
+    // debug Uart for console
+    GPIO_setAsPeripheralModuleFunctionInputPin(
+    GPIO_PORT_P2,
+    GPIO_PIN0+GPIO_PIN1,
+    GPIO_PRIMARY_MODULE_FUNCTION
+    );
+
+
     PMM_unlockLPM5();
 
+    //Setup Current Time for Calendar
+    currentTime.Seconds    = 0x00;
+    currentTime.Minutes    = 0x26;
+    currentTime.Hours      = 0x23;
+    currentTime.DayOfWeek  = 0x02;
+    currentTime.DayOfMonth = 0x14;
+    currentTime.Month      = 0x05;
+    currentTime.Year       = 0x2018;
+
+    //Initialize Calendar Mode of RTC
+    /*
+     * Base Address of the RTC_B
+     * Pass in current time, intialized above
+     * Use BCD as Calendar Register Format
+     */
+    RTC_C_initCalendar(RTC_C_BASE,
+        &currentTime,
+        RTC_C_FORMAT_BCD);
+
+    //Start RTC Clock
+    RTC_C_startClock(RTC_C_BASE);
 
     EUSCI_A_UART_initParam param = {0};
     param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK;
@@ -259,9 +329,28 @@ int main(void)
     param.uartMode = EUSCI_A_UART_MODE;
     param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION;
 
+
+    EUSCI_A_UART_init(EUSCI_A0_BASE, &param);
+
+    EUSCI_A_UART_enable(EUSCI_A0_BASE);
+
+    EUSCI_A_UART_clearInterrupt(EUSCI_A0_BASE,
+      EUSCI_A_UART_RECEIVE_INTERRUPT);
+
+    // Enable USCI_A0 RX interrupt
+    EUSCI_A_UART_enableInterrupt(EUSCI_A0_BASE,
+      EUSCI_A_UART_RECEIVE_INTERRUPT);
+
     EUSCI_A_UART_init(EUSCI_A3_BASE, &param);
 
     EUSCI_A_UART_enable(EUSCI_A3_BASE);
+
+    EUSCI_A_UART_clearInterrupt(EUSCI_A3_BASE,
+      EUSCI_A_UART_RECEIVE_INTERRUPT);
+
+    // Enable USCI_A3 RX interrupt
+    EUSCI_A_UART_enableInterrupt(EUSCI_A3_BASE,
+      EUSCI_A_UART_RECEIVE_INTERRUPT);                     // Enable interrupt
 
     code = USS_initAlgorithms(&gUssSWConfig);
     code = USS_configureUltrasonicMeasurement(&gUssSWConfig);
@@ -279,8 +368,109 @@ int main(void)
                              USS_low_power_mode_option_low_power_mode_3,
                              USS_LOW_POWER_RESTART_CAP_COUNT);
         ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
+        totalVolume+=algorithms_Results.volumeFlowRate;
+        dtoa(totalVolume,float_totalResult,6);
+        currentTime=RTC_C_getCalendarTime(RTC_C_BASE);
+        sprintf(YearString,"%x",currentTime.Year);
+        PadString(MonthString,currentTime.Month);
+        PadString(DayString,currentTime.DayOfMonth);
+        PadString(HourString,currentTime.Hours);
+        PadString(MinuteString,currentTime.Minutes);
+        PadString(SecondString,currentTime.Seconds);
 
-        Report("{ \"measurementDate\": \"DATE\", \"measurementInterval\": \"1\", \"measurementAmount\": \"%s\", \"moduleSN\": \"MSP430ABCD\" }\r",float_Result);
+        //20180514T194646Z
+        Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"measurementInterval\": 1, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s}\r",YearString,MonthString,DayString,HourString,MinuteString,SecondString,float_Result,float_totalResult);
     }
 
+}
+
+
+//******************************************************************************
+//
+//This is the USCI_A0 interrupt vector service routine.
+//
+//******************************************************************************
+#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
+#pragma vector=USCI_A0_VECTOR
+__interrupt
+#elif defined(__GNUC__)
+__attribute__((interrupt(USCI_A0_VECTOR)))
+#endif
+void USCI_A0_ISR(void)
+{
+  switch(__even_in_range(UCA0IV,USCI_UART_UCTXCPTIFG))
+  {
+    case USCI_NONE: break;
+    case USCI_UART_UCRXIFG:
+        RXData=EUSCI_A_UART_receiveData(EUSCI_A0_BASE);
+        pcBuffer[iLen] = RXData;
+
+        //
+        // Handling overflow of buffer
+        //
+        if(iLen >= 256)
+        {
+            iLen=0;
+        }
+
+        //
+        // Copying Data from UART into a buffer
+        //
+        if(RXData == '\0')
+        {
+            //ProcessString();
+            //break;
+        }
+        iLen++;
+
+      break;
+    case USCI_UART_UCTXIFG: break;
+    case USCI_UART_UCSTTIFG: break;
+    case USCI_UART_UCTXCPTIFG: break;
+  }
+}
+
+//******************************************************************************
+//
+//This is the USCI_A3 interrupt vector service routine.
+//
+//******************************************************************************
+#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
+#pragma vector=USCI_A3_VECTOR
+__interrupt
+#elif defined(__GNUC__)
+__attribute__((interrupt(USCI_A3_VECTOR)))
+#endif
+void USCI_A3_ISR(void)
+{
+  switch(__even_in_range(UCA3IV,USCI_UART_UCTXCPTIFG))
+  {
+    case USCI_NONE: break;
+    case USCI_UART_UCRXIFG:
+        RXData=EUSCI_A_UART_receiveData(EUSCI_A3_BASE);
+        pcBuffer[iLen] = RXData;
+
+        //
+        // Handling overflow of buffer
+        //
+        if(iLen >= 256)
+        {
+            iLen=0;
+        }
+
+        //
+        // Copying Data from UART into a buffer
+        //
+        if(RXData == '\0')
+        {
+            //ProcessString();
+            //break;
+        }
+        iLen++;
+
+      break;
+    case USCI_UART_UCTXIFG: break;
+    case USCI_UART_UCSTTIFG: break;
+    case USCI_UART_UCTXCPTIFG: break;
+  }
 }
