@@ -201,6 +201,8 @@ void Message(const char *str)
     {
         EUSCI_A_UART_transmitData(EUSCI_A3_BASE, str[i++]);
     }
+
+    EUSCI_A_UART_transmitData(EUSCI_A3_BASE, 0);
 }
 
 
@@ -266,7 +268,10 @@ void PadString(char *buffer,uint8_t time)
 int main(void)
 {
     volatile USS_message_code code;
-    double totalVolume=0;
+    static double totalVolume=0;
+    static double AvrgFlow=0;
+    float currentFloat=0;
+    unsigned char seconds=0;
     char    YearString[5]={0};
     char    MonthString[3]={0};
     char    DayString[3]={0};
@@ -276,6 +281,8 @@ int main(void)
     char float_Result[32]={0};
     char float_totalResult[32]={0};
     Calendar currentTime;
+    int count=0;
+
 
     // Configure UART
 
@@ -367,19 +374,36 @@ int main(void)
         USS_generateLPMDelay(&gUssSWConfig,
                              USS_low_power_mode_option_low_power_mode_3,
                              USS_LOW_POWER_RESTART_CAP_COUNT);
-        ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
-        totalVolume+=algorithms_Results.volumeFlowRate;
-        dtoa(totalVolume,float_totalResult,6);
+        //totalVolume+=algorithms_Results.volumeFlowRate;
+        AvrgFlow+=algorithms_Results.volumeFlowRate;
         currentTime=RTC_C_getCalendarTime(RTC_C_BASE);
-        sprintf(YearString,"%x",currentTime.Year);
-        PadString(MonthString,currentTime.Month);
-        PadString(DayString,currentTime.DayOfMonth);
-        PadString(HourString,currentTime.Hours);
-        PadString(MinuteString,currentTime.Minutes);
-        PadString(SecondString,currentTime.Seconds);
 
-        //20180514T194646Z
-        Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"measurementInterval\": 1, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s}\r",YearString,MonthString,DayString,HourString,MinuteString,SecondString,float_Result,float_totalResult);
+        count++;
+        if(seconds!=currentTime.Seconds)
+        {
+            seconds = currentTime.Seconds;
+            currentFloat=(float)(AvrgFlow/count);
+            //ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
+            ftoa(currentFloat,float_Result,6);
+
+            totalVolume+=AvrgFlow;
+            dtoa(totalVolume,float_totalResult,6);
+
+            currentTime=RTC_C_getCalendarTime(RTC_C_BASE);
+            sprintf(YearString,"%x",currentTime.Year);
+            PadString(MonthString,currentTime.Month);
+            PadString(DayString,currentTime.DayOfMonth);
+            PadString(HourString,currentTime.Hours);
+            PadString(MinuteString,currentTime.Minutes);
+            PadString(SecondString,currentTime.Seconds);
+
+            //20180514T194646Z
+            Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"measurementInterval\": %d, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s}",YearString,MonthString,DayString,HourString,MinuteString,SecondString,count,float_Result,float_totalResult);
+            count=0;
+            AvrgFlow=0;
+            currentFloat=0;
+
+        }
     }
 
 }
