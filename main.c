@@ -135,7 +135,7 @@ void dtoa(double n, char *res, int afterpoint)
     if(fpart<0) fpart*=-1;
 
     // convert integer part to string
-    long i = longToStr(ipart, res, 0);
+    long i = longToStr(ipart, res, 1);
 
     // check for display option after point
     if (afterpoint != 0)
@@ -162,7 +162,7 @@ void ftoa(float n, char *res, int afterpoint)
     if(fpart<0) fpart*=-1;
 
     // convert integer part to string
-    int i = intToStr(ipart, res, 0);
+    int i = intToStr(ipart, res, 1);
 
     // check for display option after point
     if (afterpoint != 0)
