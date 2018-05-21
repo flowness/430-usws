@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ussMspGui>
+	<settings>
+		<isLogging>true</isLogging>
+		<logLocation>C:\Users\hazar\USS_1_70_01_01\USSWorkspace\USS_Project</logLocation>
+	</settings>
+	<configParams>
+		<target>water</target>
+		<lph_gpm>lph</lph_gpm>
+		<f1f2>1010.0 1050.0</f1f2>
+		<patternSeq>0</patternSeq>
+		<gapBetweenPulseAndCapture>40.0</gapBetweenPulseAndCapture>
+		<numberOfPulses>31.0</numberOfPulses>
+		<gapBetweenUpsAndDns>16000.0</gapBetweenUpsAndDns>
+		<gapBetweenDnsAndUps>100.0</gapBetweenDnsAndUps>
+		<gainControl>30.8</gainControl>
+		<areaConstant>15986841.00</areaConstant>
+		<xt2Freq>8000.0</xt2Freq>
+		<sigSamplingFreq>4000.0</sigSamplingFreq>
+		<adcSamplePulse>20</adcSamplePulse>
+		<deltaTOFOffset>-175.0</deltaTOFOffset>
+		<absTOFAdditionDelay>0.0</absTOFAdditionDelay>
+		<captureDuration>40.0</captureDuration>
+	</configParams>
+	<devModeParams>
+		<param1>0.0</param1>
+		<param2>0.0</param2>
+		<param3>300000.0</param3>
+		<param4>295000.0</param4>
+		<param5>5000.0</param5>
+		<param6>0.0</param6>
+		<param7>120.0</param7>
+		<param8>0.0</param8>
+		<param9>0.0</param9>
+		<param10>0.0</param10>
+	</devModeParams>
+</ussMspGui>

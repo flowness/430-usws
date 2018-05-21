@@ -270,8 +270,10 @@ int main(void)
     volatile USS_message_code code;
     static double totalVolume=0;
     static double AvrgFlow=0;
+    //float LiterPerMinuteFactor = 1;
     float currentFloat=0;
     unsigned char seconds=0;
+    //unsigned char minutes=0;
     char    YearString[5]={0};
     char    MonthString[3]={0};
     char    DayString[3]={0};
@@ -281,8 +283,11 @@ int main(void)
     char float_Result[32]={0};
     char float_totalResult[32]={0};
     Calendar currentTime;
-    int count=0;
+    int US_MeaseCountTotal=0;
+    int US_CurrentMeaseCountSuccess=0;
 
+    int USmeasErrorsCount = 0;
+    int USalgorithmErrorsCount = 0;
 
     // Configure UART
 
@@ -305,10 +310,10 @@ int main(void)
 
     //Setup Current Time for Calendar
     currentTime.Seconds    = 0x00;
-    currentTime.Minutes    = 0x26;
-    currentTime.Hours      = 0x23;
-    currentTime.DayOfWeek  = 0x02;
-    currentTime.DayOfMonth = 0x14;
+    currentTime.Minutes    = 0x45;
+    currentTime.Hours      = 0x09;
+    currentTime.DayOfWeek  = 0x06;
+    currentTime.DayOfMonth = 0x18;
     currentTime.Month      = 0x05;
     currentTime.Year       = 0x2018;
 
@@ -360,35 +365,61 @@ int main(void)
       EUSCI_A_UART_RECEIVE_INTERRUPT);                     // Enable interrupt
 
     code = USS_initAlgorithms(&gUssSWConfig);
+    if (code != 0) { Report("\"USS_initAlgorithms error:\" %d\n\r", code); }
+
     code = USS_configureUltrasonicMeasurement(&gUssSWConfig);
+    if (code != 0) { Report("\"USS_configureUltrasonicMeasurement error:\" %d\n\r", code); }
+
     code = USS_calibrateSignalGain(&gUssSWConfig);
+    if (code != 177) { Report("\"USS_calibrateSignalGain error:\" %d\n\r", code); }
+
     code = USS_estimateDCoffset(&gUssSWConfig,
         USS_dcOffEst_Calc_Mode_trigger_UPS_DNS_capture_controlled_by_ASQ);
+    if (code != 0) { Report("\"USS_estimateDCoffset error:\" %d\n\r", code); }
+
 
     while (1)
     {
+        US_MeaseCountTotal++;
+        //code = USS_startUltrasonicMeasurement(&gUssSWConfig, USS_capture_power_mode_low_power_mode_0);
+        code = USS_startUltrasonicMeasurement(&gUssSWConfig, USS_capture_power_mode_active);
 
-        code = USS_startUltrasonicMeasurement(
-                &gUssSWConfig, USS_capture_power_mode_low_power_mode_0);
-        code = USS_runAlgorithms(&gUssSWConfig, &algorithms_Results);
-        USS_generateLPMDelay(&gUssSWConfig,
-                             USS_low_power_mode_option_low_power_mode_3,
-                             USS_LOW_POWER_RESTART_CAP_COUNT);
-        //totalVolume+=algorithms_Results.volumeFlowRate;
-        AvrgFlow+=algorithms_Results.volumeFlowRate;
+        //USS_generateLPMDelay(&gUssSWConfig,
+        //                     USS_low_power_mode_option_low_power_mode_3,
+        //                     USS_LOW_POWER_RESTART_CAP_COUNT);
+
+        if (code != 0)
+        {
+            Report("\"Meas error:\" %d\n\r", code);
+            USmeasErrorsCount++;
+        }
+        else
+        {
+
+            //Report("\"No Meas error\"\n\r");
+            code = USS_runAlgorithms(&gUssSWConfig, &algorithms_Results);
+
+            if (code != 0)
+            {
+                Report("\"Algorithm error:\" %d\n\r", code);
+                USalgorithmErrorsCount++;
+            }
+            else
+            {
+                //totalVolume+=algorithms_Results.volumeFlowRate;
+                AvrgFlow+=algorithms_Results.volumeFlowRate;
+
+                US_CurrentMeaseCountSuccess++;
+            }
+
+        }
+
         currentTime=RTC_C_getCalendarTime(RTC_C_BASE);
 
-        count++;
         if(seconds!=currentTime.Seconds)
+        //if(minutes!=currentTime.Minutes)
         {
             seconds = currentTime.Seconds;
-            currentFloat=(float)(AvrgFlow/count);
-            //ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
-            ftoa(currentFloat,float_Result,6);
-
-            totalVolume+=AvrgFlow;
-            dtoa(totalVolume,float_totalResult,6);
-
             currentTime=RTC_C_getCalendarTime(RTC_C_BASE);
             sprintf(YearString,"%x",currentTime.Year);
             PadString(MonthString,currentTime.Month);
@@ -397,12 +428,39 @@ int main(void)
             PadString(MinuteString,currentTime.Minutes);
             PadString(SecondString,currentTime.Seconds);
 
-            //20180514T194646Z
-            Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"measurementInterval\": %d, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s}",YearString,MonthString,DayString,HourString,MinuteString,SecondString,count,float_Result,float_totalResult);
-            count=0;
+            //minutes = currentTime.Minutes;
+
+            // if at least 1 measurement was valid
+            if (US_CurrentMeaseCountSuccess > 0)
+            {
+                // If reported each second - we need to divide the flow rate by 60, as it calculated by Liter per Minute
+                //LiterPerMinuteFactor = 1;
+
+                //currentFloat=(float)(AvrgFlow/LiterPerMinuteFactor/count);
+                currentFloat=(float)(AvrgFlow/US_CurrentMeaseCountSuccess);
+
+
+                //ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
+                ftoa(currentFloat,float_Result,6);
+
+                //totalVolume+=AvrgFlow/LiterPerMinuteFactor;
+                totalVolume+=AvrgFlow;
+                dtoa(totalVolume,float_totalResult,6);
+
+
+                //20180514T194646Z
+                Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"US_MeaseCountTotal\": %d, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s, \"USmeasErrorsCount\": %d, \"USalgorithmErrorsCount\": %d }\n\r",YearString,MonthString,DayString,HourString,MinuteString,SecondString,US_MeaseCountTotal,float_Result,float_totalResult, USmeasErrorsCount, USalgorithmErrorsCount);
+            }
+            else
+            {
+                Report("{ \"US_MeaseCountTotal\": %d, \"USmeasErrorsCount\": %d, \"USalgorithmErrorsCount\": %d }\n\r",US_MeaseCountTotal, USmeasErrorsCount, USalgorithmErrorsCount);
+            }
+
+            US_CurrentMeaseCountSuccess=0;
             AvrgFlow=0;
             currentFloat=0;
-
+            USmeasErrorsCount = 0;
+            USalgorithmErrorsCount = 0;
         }
     }
 
