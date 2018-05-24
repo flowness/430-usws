@@ -365,30 +365,28 @@ int main(void)
       EUSCI_A_UART_RECEIVE_INTERRUPT);                     // Enable interrupt
 
     code = USS_initAlgorithms(&gUssSWConfig);
-    if (code != 0) { Report("\"USS_initAlgorithms error:\" %d\n\r", code); }
+    if (code != USS_message_code_no_error) { Report("\"USS_initAlgorithms error:\" %d\n\r", code); }
 
     code = USS_configureUltrasonicMeasurement(&gUssSWConfig);
-    if (code != 0) { Report("\"USS_configureUltrasonicMeasurement error:\" %d\n\r", code); }
+    if (code != USS_message_code_no_error) { Report("\"USS_configureUltrasonicMeasurement error:\" %d\n\r", code); }
 
     code = USS_calibrateSignalGain(&gUssSWConfig);
-    if (code != 177) { Report("\"USS_calibrateSignalGain error:\" %d\n\r", code); }
+    if (code != USS_message_code_Signal_Gain_Calibration_successful) { Report("\"USS_calibrateSignalGain error:\" %d\n\r", code); }
 
     code = USS_estimateDCoffset(&gUssSWConfig,
         USS_dcOffEst_Calc_Mode_trigger_UPS_DNS_capture_controlled_by_ASQ);
-    if (code != 0) { Report("\"USS_estimateDCoffset error:\" %d\n\r", code); }
+    if (code != USS_message_code_no_error) { Report("\"USS_estimateDCoffset error:\" %d\n\r", code); }
 
 
     while (1)
     {
         US_MeaseCountTotal++;
-        //code = USS_startUltrasonicMeasurement(&gUssSWConfig, USS_capture_power_mode_low_power_mode_0);
-        code = USS_startUltrasonicMeasurement(&gUssSWConfig, USS_capture_power_mode_active);
 
-        //USS_generateLPMDelay(&gUssSWConfig,
-        //                     USS_low_power_mode_option_low_power_mode_3,
-        //                     USS_LOW_POWER_RESTART_CAP_COUNT);
+        code = USS_startUltrasonicMeasurement(
+                &gUssSWConfig, USS_capture_power_mode_low_power_mode_0);
 
-        if (code != 0)
+
+        if (code != USS_message_code_no_error)
         {
             Report("\"Meas error:\" %d\n\r", code);
             USmeasErrorsCount++;
@@ -398,8 +396,10 @@ int main(void)
 
             //Report("\"No Meas error\"\n\r");
             code = USS_runAlgorithms(&gUssSWConfig, &algorithms_Results);
-
-            if (code != 0)
+            USS_generateLPMDelay(&gUssSWConfig,
+                                 USS_low_power_mode_option_low_power_mode_3,
+                                 USS_LOW_POWER_RESTART_CAP_COUNT);
+            if (code != USS_message_code_valid_results)
             {
                 Report("\"Algorithm error:\" %d\n\r", code);
                 USalgorithmErrorsCount++;

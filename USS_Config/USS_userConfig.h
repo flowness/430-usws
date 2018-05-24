@@ -111,7 +111,6 @@ extern "C" {
 //*****************************************************************************
 // defines
 //*****************************************************************************
-// No modified by the GUI
 #define USS_SW_LIB_APP_MAX_CAPTURE_SIZE           400
 #define USS_SW_LIB_ENABLE_ACCUMULATION            false
 
