@@ -1,5 +1,5 @@
 /* --COPYRIGHT--,TI
- *MSP Source and Object Code Software License Agreement Hagay
+ *MSP Source and Object Code Software License Agreement
  *
  *
  **IMPORTANT - PLEASE CAREFULLY READ THE FOLLOWING LICENSE AGREEMENT, WHICH IS LEGALLY BINDING.  AFTER YOU READ IT, YOU WILL BE ASKED WHETHER YOU ACCEPT AND AGREE TO ITS TERMS.  DO NOT CLICK  "I ACCEPT" UNLESS: (1) YOU WILL USE THE LICENSED MATERIALS FOR YOUR OWN BENEFIT AND PERSONALLY ACCEPT, AGREE TO AND INTEND TO BE BOUND BY THESE TERMS; OR (2) YOU ARE AUTHORIZED TO, AND INTEND TO BE BOUND BY, THESE TERMS ON BEHALF OF YOUR COMPANY.
@@ -81,14 +81,18 @@
 //
 //! \file   ussSwLib_userConfig.h
 //!
-//! \brief  USS SW Library configuration file
+//! \brief  USS Library configuration file
 //!         
 //
 //  Group:          MSP
-//  Target Device:  MSPFR6047
+//  Target Device:  Banshee
 //
 //  (C) Copyright 2015, Texas Instruments, Inc.
 //#############################################################################
+// TI Release: UltrasonicWaterFR6047_01_40_00_01
+// Release Date: November 26, 2017
+//#############################################################################
+
 
 //*****************************************************************************
 // includes
@@ -114,10 +118,10 @@ extern "C" {
 #define USS_SW_LIB_APP_MAX_CAPTURE_SIZE           400
 #define USS_SW_LIB_ENABLE_ACCUMULATION            false
 
-#define USS_MCLK_FREQ_IN_HZ                           16000000
+#define    USS_MCLK_FREQ_IN_HZ                        8000000
 #define USS_LFXT_FREQ_IN_HZ                           32768
 #define USSSWLIB_TIMER_BASE_ADDRESS                   (TIMER_A2_BASE)
-#define USS_DIAGNOSTIC_MODE                           USS_diagnostics_mode_2
+#define USS_DIAGNOSTIC_MODE                           USS_diagnostics_mode_0
 #define USS_ACOUSTIC_LENGTH                           70
 #define USS_TRANSDUCER_FREQ                           1030000
 #define USS_VOLUME_SCALE_FACTOR                       15986841
@@ -130,33 +134,33 @@ extern "C" {
 #define USS_NUM_OF_STOP_PULSES                        0
 #define USS_SEQUENCE_SELECTION                        USS_measurement_capture_sequence_ch0_ch1
 #define USS_EOF_SEQUENCE_SELECTION                    USS_measurement_end_of_sequence_state_power_off
-#define USS_START_CAPTURE_SEC                         3.0E-4
-#define USS_TURN_ON_ADC_COUNT_SEC                     2.95E-4
-#define USS_PGA_IN_BIAS_COUNT_SEC                     5.0E-6
-#define USS_ADC_SAMP_COUNT_SEC                        3.4000003E-4
-#define USS_RESTART_CAP_COUNT_SEC                     0.1
-#define USS_TIME_OUT_COUNT_SEC                        3334e-6
+#define USS_START_CAPTURE_SEC                         10e-6
+#define USS_TURN_ON_ADC_COUNT_SEC                     5e-6
+#define USS_PGA_IN_BIAS_COUNT_SEC                     40e-6
+#define USS_ADC_SAMP_COUNT_SEC                        70e-6
+#define USS_RESTART_CAP_COUNT_SEC                     150e-6
+#define USS_TIME_OUT_COUNT_SEC                        3000e-6
 #define USS_HSPLL_FREQ_IN_MHZ                         80
 #define USS_PLL_XTAL_IN_KHZ                           8000
-#define USS_HSPLL_USSXTAL_SETTLING_USEC               120.0
+#define USS_HSPLL_USSXTAL_SETTLING_USEC               5000
 #define USS_OUTPUT_PLL_XTAL                           false
 #define USS_HSPLL_INPUT_CLK_TYPE                      USS_HSPLL_input_clock_type_ceramic_resonator
 #define USS_ENABLE_UUPSPREQIGINTERRUPT                false
 #define USS_ENABLE_SAPH_PING_TRANSMIT                 false
 #define USS_OVER_SAMPLE_RATE                          USS_Capture_Over_Sample_Rate_20
-#define USS_USER_CONFIG_NUMBER_OF_SAMPLES_PER_CAPTURE 160
-#define USS_GAIN_RANGE                                USS_Capture_Gain_Range_30_8
+#define USS_USER_CONFIG_NUMBER_OF_SAMPLES_PER_CAPTURE 144
+#define USS_GAIN_RANGE                                USS_Capture_Gain_Range_minus_5_5
 #define USS_ENABLE_WINDOW_HI_COMP                     false
 #define USS_ENABLE_WINDOW_LO_COMP                     false
 #define USS_WINDOW_HIGH_THRESHOLD                     1040
 #define USS_WINDOW_LOW_THRESHOLD                      -1040
-#define USS_MISMATCH_DELTA_VALUES                     USS_Capture_Calibration_disabled
+#define USS_MISMATCH_DELTA_VALUES                     USS_Capture_Calibration_enabled
 #define USS_DELTA_1                                   0x00
 #define USS_DELTA_2                                   0x00
 #define USS_AGC_CONSTANT                              60
 #define USS_TRIGGER_CONFIG                            USS_Triger_Configuration_Software_Trigger
-#define USS_ULP_BIAS_DELAY                            USS_measurement_ULP_bias_delay_no_delay
-#define USS_BIAS_IMPEDANCE                            USS_measurement_bias_impedance_1200_Ohms
+#define USS_ULP_BIAS_DELAY                            USS_measurement_ULP_bias_delay_200_usec
+#define USS_BIAS_IMPEDANCE                            USS_measurement_bias_impedance_2800_Ohms
 #define USS_MUX_CHARGE_PUMP_MODE                      USS_measurement_mux_charge_pump_always_off
 #define USS_ALG_HIGH_FLOW_OPTION                      (USS_highFlow_option_disabled)
 #define USS_SW_LIB_APP_MAX_FILTER_LENGTH          20
@@ -179,9 +183,9 @@ extern "C" {
 
 // Banshee Flow algorithm configuration
 #define USS_ALG_ABS_TOF_INTERVAL                      1
-#define USS_ALG_ADC_ADDITIONAL_CAP_DLY                0.0
+#define USS_ALG_ADC_ADDITIONAL_CAP_DLY                11.0e-6
 #define USS_ALG_CORR_VAL_THRSH_CHK_FACT               0.05
-#define USS_ALG_DCOFFSET                              -1.75E-10
+#define USS_ALG_DCOFFSET                              20e-12
 #define USS_ALG_ENABLE_WINDOWING                      true
 #define USS_ALG_MAX_RATIO_PEAK_2_PEAK_VAR             0.2
 #define USS_ALG_NUM_CYCLES_SEARCH_CORR                2
@@ -197,7 +201,6 @@ extern "C" {
 #define USS_ALG_WIN_NUM_CYCLES                        USS_NUM_OF_EXCITATION_PULSES
 #define USS_ALG_FILT_IS_FILTER_ENABLED                false
 #define USS_ALG_IS_INIT_ALGORITHMS                    false
-
 
 
 //******************************************************************************
@@ -275,13 +278,13 @@ extern "C" {
 #define USS_RESTART_CAP_COUNT   ((USS_PLL_FREQ*USS_RESTART_CAP_COUNT_SEC/16)/16)
 #define USS_TIME_OUT_COUNT      ((USS_PLL_FREQ*USS_TIME_OUT_COUNT_SEC/4)/16)
 #define USS_LOW_POWER_RESTART_CAP_COUNT (USS_LFXT_FREQ_IN_HZ*USS_RESTART_CAP_COUNT_SEC)
-#define USS_PULSE_HIGH_PHASE_PERIOD   (((USS_PLL_FREQ)/USS_TRANSDUCER_FREQ)*USS_PULSE_DUTYPERCENT)
-#define USS_PULSE_LOW_PHASE_PERIOD    (((USS_PLL_FREQ)/USS_TRANSDUCER_FREQ)*(1-USS_PULSE_DUTYPERCENT))
+#define USS_PULSE_HIGH_PHASE_PERIOD   (((USS_PLL_FREQ/4)/USS_TRANSDUCER_FREQ)*USS_PULSE_DUTYPERCENT)
+#define USS_PULSE_LOW_PHASE_PERIOD    (((USS_PLL_FREQ/4)/USS_TRANSDUCER_FREQ)*(1-USS_PULSE_DUTYPERCENT))
 
 
 #define USS_HSPLL_TEMP1            (USS_LFXT_FREQ_IN_HZ*16)
 #define USS_HSPLL_TEMP3            ((USS_PLL_FREQ)/USS_HSPLL_TEMP1)
-#define USS_HSPLL_TOLERANCE        ((USS_HSPLL_TEMP3)*(5.55))
+#define USS_HSPLL_TOLERANCE        ((USS_HSPLL_TEMP3)*(5))
 
 
 // Macros used to place variables in LEA RAM memory section
@@ -324,7 +327,7 @@ extern "C" {
 #define USS_HSPLL_USSXTAL_SETTLING_COUNT (USS_HSPLL_USSXTAL_SETTLING_COUNT_TEMP/10)
 
 #if (USS_ALG_FILT_IS_FILTER_ENABLED == true)
-#if (USS_OVER_SAMPLE_RATE == USS_Capture_Over_Sample_Rate_40)
+#if (USS_OVER_SAMPLE_RATE == USS_Capture_Over_Sample_Rate_20)
 #if (USS_HSPLL_FREQ_IN_MHZ == 80)
 #define USS_ALG_FILT_OPTION                                             3
 #elif (USS_HSPLL_FREQ_IN_MHZ == 76)
