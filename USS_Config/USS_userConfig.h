@@ -134,22 +134,38 @@ extern "C" {
 #define USS_NUM_OF_STOP_PULSES                        0
 #define USS_SEQUENCE_SELECTION                        USS_measurement_capture_sequence_ch0_ch1
 #define USS_EOF_SEQUENCE_SELECTION                    USS_measurement_end_of_sequence_state_power_off
+/*
+#define USS_START_CAPTURE_SEC                         3.0E-4
+#define USS_TURN_ON_ADC_COUNT_SEC                     2.95E-4
+#define USS_PGA_IN_BIAS_COUNT_SEC                     5.0E-6
+#define USS_ADC_SAMP_COUNT_SEC                        3.4000003E-4
+#define USS_RESTART_CAP_COUNT_SEC                     0.1
+#define USS_TIME_OUT_COUNT_SEC                        3334e-6
+
 #define USS_START_CAPTURE_SEC                         10e-6
 #define USS_TURN_ON_ADC_COUNT_SEC                     5e-6
 #define USS_PGA_IN_BIAS_COUNT_SEC                     40e-6
 #define USS_ADC_SAMP_COUNT_SEC                        70e-6
 #define USS_RESTART_CAP_COUNT_SEC                     150e-6
 #define USS_TIME_OUT_COUNT_SEC                        3000e-6
+*/
+
+#define USS_START_CAPTURE_SEC                         3.0E-4
+#define USS_TURN_ON_ADC_COUNT_SEC                     2.95E-4
+#define USS_PGA_IN_BIAS_COUNT_SEC                     5.0E-6
+#define USS_ADC_SAMP_COUNT_SEC                        3.4000003E-4
+#define USS_RESTART_CAP_COUNT_SEC                     150e-6
+#define USS_TIME_OUT_COUNT_SEC                        3334e-6
 #define USS_HSPLL_FREQ_IN_MHZ                         80
 #define USS_PLL_XTAL_IN_KHZ                           8000
-#define USS_HSPLL_USSXTAL_SETTLING_USEC               5000
+#define USS_HSPLL_USSXTAL_SETTLING_USEC               120.0
 #define USS_OUTPUT_PLL_XTAL                           false
 #define USS_HSPLL_INPUT_CLK_TYPE                      USS_HSPLL_input_clock_type_ceramic_resonator
 #define USS_ENABLE_UUPSPREQIGINTERRUPT                false
 #define USS_ENABLE_SAPH_PING_TRANSMIT                 false
 #define USS_OVER_SAMPLE_RATE                          USS_Capture_Over_Sample_Rate_20
-#define USS_USER_CONFIG_NUMBER_OF_SAMPLES_PER_CAPTURE 144
-#define USS_GAIN_RANGE                                USS_Capture_Gain_Range_minus_5_5
+#define USS_USER_CONFIG_NUMBER_OF_SAMPLES_PER_CAPTURE 160
+#define USS_GAIN_RANGE                                USS_Capture_Gain_Range_21_5
 #define USS_ENABLE_WINDOW_HI_COMP                     false
 #define USS_ENABLE_WINDOW_LO_COMP                     false
 #define USS_WINDOW_HIGH_THRESHOLD                     1040
@@ -159,8 +175,8 @@ extern "C" {
 #define USS_DELTA_2                                   0x00
 #define USS_AGC_CONSTANT                              60
 #define USS_TRIGGER_CONFIG                            USS_Triger_Configuration_Software_Trigger
-#define USS_ULP_BIAS_DELAY                            USS_measurement_ULP_bias_delay_200_usec
-#define USS_BIAS_IMPEDANCE                            USS_measurement_bias_impedance_2800_Ohms
+#define USS_ULP_BIAS_DELAY                            USS_measurement_ULP_bias_delay_no_delay
+#define USS_BIAS_IMPEDANCE                            USS_measurement_bias_impedance_1200_Ohms
 #define USS_MUX_CHARGE_PUMP_MODE                      USS_measurement_mux_charge_pump_always_off
 #define USS_ALG_HIGH_FLOW_OPTION                      (USS_highFlow_option_disabled)
 #define USS_SW_LIB_APP_MAX_FILTER_LENGTH          20
@@ -183,9 +199,9 @@ extern "C" {
 
 // Banshee Flow algorithm configuration
 #define USS_ALG_ABS_TOF_INTERVAL                      1
-#define USS_ALG_ADC_ADDITIONAL_CAP_DLY                11.0e-6
+#define USS_ALG_ADC_ADDITIONAL_CAP_DLY                0.0
 #define USS_ALG_CORR_VAL_THRSH_CHK_FACT               0.05
-#define USS_ALG_DCOFFSET                              20e-12
+#define USS_ALG_DCOFFSET                              0//-0.75E-10
 #define USS_ALG_ENABLE_WINDOWING                      true
 #define USS_ALG_MAX_RATIO_PEAK_2_PEAK_VAR             0.2
 #define USS_ALG_NUM_CYCLES_SEARCH_CORR                2

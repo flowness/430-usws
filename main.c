@@ -55,6 +55,74 @@ uint8_t check = 0;
 char pcBuffer[256]={0};
 int     iLen = 0;
 
+char *UssErrorToString(int i)
+{
+    switch(i)
+    {
+        case 0: return "no error";
+        case 1: return "SAPH pulseLowPhasePeriod error";
+        case 2: return "SAPH pulseHighPhasePeriod error";
+        case 3: return "SAPH numOfExcitationPulses error";
+        case 4: return "SAPH numOfStopPulses error";
+        case 5: return "SAPH update error ongoing conversion";
+        case 6: return "SAPH time startPPGCount error";
+        case 7: return "SAPH time turnOnADCCount error";
+        case 8: return "SAPH time startADCsamplingCount error";
+        case 9: return "SAPH time restartCaptureCount error";
+        case 10: return "SAPH time captureTimeOutCount error";
+        case 11: return "SAPH time startPGAandINBiasCount error";
+        case 12: return "SAPH invalid bias impedance error";
+        case 13: return "SAPH invalid rx charge pump mode error";
+        case 21: return "HSPLL pllXtalFreq inHz error";
+        case 22: return "HSPLL pllOutputFreq inHz error";
+        case 23: return "HSPLL plllock error";
+        case 24: return "HSPLL pll unlock error";
+        case 26: return "HSPLL update error ongoing conversion";
+        case 27: return "HSPLL verification expected count error";
+        case 28: return "HSPLL invalid settling count error";
+        case 41: return "SDHS threshold error";
+        case 43: return "SDHS conversion overflow error";
+        case 44: return "SDHS sample size error";
+        case 45: return "SDHS update error ongoing conversion";
+        case 46: return "SDHS window low threshold reached";
+        case 47: return "SDHS window high threshold reached";
+        case 48: return "SDHS max size error";
+        case 61: return "UUPS update error ongoing conversion";
+        case 62: return "UUPS power up time out error";
+        case 63: return "UUPS power up error";
+        case 64: return "UUPS power down error";
+        case 81: return "data error abort";
+        case 82: return "ASQ time out";
+        case 101: return "measurement stopped";
+        case 102: return "error conversion stopped by debugger";
+        case 121: return "parameter check failed";
+        case 122: return "valid results";
+        case 123: return "algorithm error";
+        case 124: return "algorithm error invalid iteration value";
+        case 125: return "algorithm error no signal detected ups channel";
+        case 126: return "algorithm error no signal detected ups dns channel";
+        case 127: return "algorithm error no signal detected dns channel";
+        case 128: return "algorithm captures accumulated";
+        case 129: return "algorithm error invalid clock relative error";
+        case 130: return "algorithm error invalid filter length";
+        case 142: return "interrupt update error ongoing conversion";
+        case 161: return "invalid conversion data";
+        case 171: return "Calibration DAC success";
+        case 172: return "Calibration DAC error";
+        case 173: return "Calibration Gain error";
+        case 174: return "Calibration DCO error";
+        case 175: return "Signal Gain Calibration timeout";
+        case 176: return "Signal Gain Calibration settling";
+        case 177: return "Signal Gain Calibration successful";
+        case 178: return "Calibration DAC timeout error";
+        case 240: return "ACLK settling time out";
+        case 241: return "silicon version does not support this functionality";
+        case 254: return "USS ongoing active conversion error";
+        default:
+        case 255: return "error occurred";
+    }
+}
+
 // reverses a string 'str' of length 'len'
 void reverse(char *str, int len)
 {
@@ -130,6 +198,7 @@ int intToStr(int x, char str[], int d)
 
 void dtoa(double n, char *res, int afterpoint)
 {
+    int j=0;
     long ipart = (long)n;
     double fpart = n - (double)ipart;
     if(fpart<0) fpart*=-1;
@@ -140,20 +209,24 @@ void dtoa(double n, char *res, int afterpoint)
     // check for display option after point
     if (afterpoint != 0)
     {
-        res[i] = '.';  // add dot
+        res[i++] = '.';  // add dot
 
         // Get the value of fraction part upto given no.
         // of points after dot. The third parameter is needed
         // to handle cases like 233.007
-        fpart = fpart * pow(10, afterpoint);
+        for(;j<afterpoint;j++) fpart*=10;
 
-        intToStr((int)fpart, res + i + 1, afterpoint);
+//        fpart = fpart * powl(10, afterpoint);
+
+        longToStr((long)fpart, res+i, afterpoint);
     }
 }
 
 // Converts a floating point number to string.
 void ftoa(float n, char *res, int afterpoint)
 {
+    int j=0;
+
     // Extract integer part
     int ipart = (int)n;
 
@@ -167,14 +240,15 @@ void ftoa(float n, char *res, int afterpoint)
     // check for display option after point
     if (afterpoint != 0)
     {
-        res[i] = '.';  // add dot
+        res[i++] = '.';  // add dot
 
         // Get the value of fraction part upto given no.
         // of points after dot. The third parameter is needed
         // to handle cases like 233.007
-        fpart = fpart * pow(10, afterpoint);
+        for(;j<afterpoint;j++) fpart*=10;
+        //fpart = fpart * powl(10, afterpoint);
 
-        intToStr((int)fpart, res + i + 1, afterpoint);
+        longToStr((long)fpart, res+i, afterpoint);
     }
 }
 
@@ -205,7 +279,14 @@ void Message(const char *str)
     EUSCI_A_UART_transmitData(EUSCI_A3_BASE, 0);
 }
 
-
+void Message_Debug(const char *str)
+{
+    int i=0;
+    while(str[i]!=0)
+    {
+        EUSCI_A_UART_transmitData(EUSCI_A1_BASE, str[i++]);
+    }
+}
 //*****************************************************************************
 //
 //! prints the formatted string on to the console
@@ -236,27 +317,39 @@ int Report(const char *pcFormat, ...)
         {
             break;
         }
-        /*
-        else
-        {
-            iSize *= 2;
-            if((pcTemp = realloc(pcBuff, iSize)) == NULL)
-            {
-                Message("Could not reallocate memory\n\r");
-                iRet = -1;
-                break;
-            }
-            else
-            {
-                pcBuff = pcTemp;
-            }
-        }
-        */
     }
     Message(pcBuff);
 
     return iRet;
 }
+
+void debugPrintSamples(int16_t *pUPSCap,int16_t *pDNSCap,uint16_t updnsCaptureSize)
+{
+    char        pcBuff[2048];
+    char        *ptr=pcBuff;
+    int i=0;
+
+    ptr+= sprintf (ptr, "{\"UPS\": [%d",pUPSCap[i++]);
+    while(i<updnsCaptureSize)
+    {
+        ptr+= sprintf (ptr, ",%d", pUPSCap[i++]);
+    }
+
+    i=0;
+    ptr+= sprintf (ptr, "], \"UDS\": [%d",pDNSCap[i++]);
+    while(i<updnsCaptureSize)
+    {
+        ptr+= sprintf (ptr, ",%d", pDNSCap[i++]);
+    }
+
+    ptr+= sprintf (ptr, "] }\r\n\0");
+
+    Message_Debug(pcBuff);
+
+    //debugReport("{\"UPS\": [%s], \"UDS\": [%s] }\0",UPSCapBuff,UDSCapBuff);
+}
+
+
 void PadString(char *buffer,uint8_t time)
 {
     if(time<0x10)
@@ -268,8 +361,8 @@ void PadString(char *buffer,uint8_t time)
 int main(void)
 {
     volatile USS_message_code code;
-    static double totalVolume=0;
-    static double AvrgFlow=0;
+    double totalVolume=0;
+    double AvrgFlow=0;
     //float LiterPerMinuteFactor = 1;
     float currentFloat=0;
     unsigned char seconds=0;
@@ -300,8 +393,8 @@ int main(void)
 
     // debug Uart for console
     GPIO_setAsPeripheralModuleFunctionInputPin(
-    GPIO_PORT_P2,
-    GPIO_PIN0+GPIO_PIN1,
+    GPIO_PORT_P1,
+    GPIO_PIN2+GPIO_PIN3,
     GPIO_PRIMARY_MODULE_FUNCTION
     );
 
@@ -342,15 +435,15 @@ int main(void)
     param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION;
 
 
-    EUSCI_A_UART_init(EUSCI_A0_BASE, &param);
+    EUSCI_A_UART_init(EUSCI_A1_BASE, &param);
 
-    EUSCI_A_UART_enable(EUSCI_A0_BASE);
+    EUSCI_A_UART_enable(EUSCI_A1_BASE);
 
-    EUSCI_A_UART_clearInterrupt(EUSCI_A0_BASE,
+    EUSCI_A_UART_clearInterrupt(EUSCI_A1_BASE,
       EUSCI_A_UART_RECEIVE_INTERRUPT);
 
-    // Enable USCI_A0 RX interrupt
-    EUSCI_A_UART_enableInterrupt(EUSCI_A0_BASE,
+    // Enable USCI_A1 RX interrupt
+    EUSCI_A_UART_enableInterrupt(EUSCI_A1_BASE,
       EUSCI_A_UART_RECEIVE_INTERRUPT);
 
     EUSCI_A_UART_init(EUSCI_A3_BASE, &param);
@@ -365,17 +458,17 @@ int main(void)
       EUSCI_A_UART_RECEIVE_INTERRUPT);                     // Enable interrupt
 
     code = USS_initAlgorithms(&gUssSWConfig);
-    if (code != USS_message_code_no_error) { Report("\"USS_initAlgorithms error:\" %d\n\r", code); }
+    if (code != USS_message_code_no_error) { Report("\"USS_initAlgorithms error:\" (%d)-%s\n\r", code,UssErrorToString(code)); }
 
     code = USS_configureUltrasonicMeasurement(&gUssSWConfig);
-    if (code != USS_message_code_no_error) { Report("\"USS_configureUltrasonicMeasurement error:\" %d\n\r", code); }
+    if (code != USS_message_code_no_error) { Report("\"USS_configureUltrasonicMeasurement error:\" (%d)-%s\n\r", code,UssErrorToString(code)); }
 
     code = USS_calibrateSignalGain(&gUssSWConfig);
-    if (code != USS_message_code_Signal_Gain_Calibration_successful) { Report("\"USS_calibrateSignalGain error:\" %d\n\r", code); }
+    if (code != USS_message_code_Signal_Gain_Calibration_successful) { Report("\"USS_calibrateSignalGain error:\" (%d)-%s\n\r", code,UssErrorToString(code)); }
 
     code = USS_estimateDCoffset(&gUssSWConfig,
         USS_dcOffEst_Calc_Mode_trigger_UPS_DNS_capture_controlled_by_ASQ);
-    if (code != USS_message_code_no_error) { Report("\"USS_estimateDCoffset error:\" %d\n\r", code); }
+    if (code != USS_message_code_no_error) { Report("\"USS_estimateDCoffset error:\" (%d)-%s\n\r", code,UssErrorToString(code)); }
 
 
     while (1)
@@ -385,10 +478,11 @@ int main(void)
         code = USS_startUltrasonicMeasurement(
                 &gUssSWConfig, USS_capture_power_mode_low_power_mode_0);
 
+        debugPrintSamples(USS_getUPSPtr(),USS_getDNSPtr(),gUssSWConfig.captureConfig->sampleSize);
 
         if (code != USS_message_code_no_error)
         {
-            Report("\"Meas error:\" %d\n\r", code);
+            Report("\"Meas error:\" (%d)-%s\n\r", code,UssErrorToString(code));
             USmeasErrorsCount++;
         }
         else
@@ -401,7 +495,7 @@ int main(void)
                                  USS_LOW_POWER_RESTART_CAP_COUNT);
             if (code != USS_message_code_valid_results)
             {
-                Report("\"Algorithm error:\" %d\n\r", code);
+                Report("\"Algorithm error:\" (%d)-%s\n\r", code,UssErrorToString(code));
                 USalgorithmErrorsCount++;
             }
             else
@@ -443,13 +537,12 @@ int main(void)
                 //ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
                 ftoa(currentFloat,float_Result,6);
 
-                //totalVolume+=AvrgFlow/LiterPerMinuteFactor;
-                totalVolume+=AvrgFlow;
+                currentFloat/=60;
+                totalVolume+=currentFloat;
                 dtoa(totalVolume,float_totalResult,6);
 
-
                 //20180514T194646Z
-                Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"US_MeaseCountTotal\": %d, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s, \"USmeasErrorsCount\": %d, \"USalgorithmErrorsCount\": %d }\n\r",YearString,MonthString,DayString,HourString,MinuteString,SecondString,US_MeaseCountTotal,float_Result,float_totalResult, USmeasErrorsCount, USalgorithmErrorsCount);
+                Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"measurementInterval\": %d, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s, \"US_MeaseCountTotal\": %d, \"USmeasErrorsCount\": %d, \"USalgorithmErrorsCount\": %d}\n\r",YearString,MonthString,DayString,HourString,MinuteString,SecondString,US_CurrentMeaseCountSuccess,float_Result,float_totalResult, US_MeaseCountTotal, USmeasErrorsCount, USalgorithmErrorsCount);
             }
             else
             {
@@ -473,18 +566,18 @@ int main(void)
 //
 //******************************************************************************
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
-#pragma vector=USCI_A0_VECTOR
+#pragma vector=USCI_A1_VECTOR
 __interrupt
 #elif defined(__GNUC__)
-__attribute__((interrupt(USCI_A0_VECTOR)))
+__attribute__((interrupt(USCI_A1_VECTOR)))
 #endif
-void USCI_A0_ISR(void)
+void USCI_A1_ISR(void)
 {
-  switch(__even_in_range(UCA0IV,USCI_UART_UCTXCPTIFG))
+  switch(__even_in_range(UCA1IV,USCI_UART_UCTXCPTIFG))
   {
     case USCI_NONE: break;
     case USCI_UART_UCRXIFG:
-        RXData=EUSCI_A_UART_receiveData(EUSCI_A0_BASE);
+        RXData=EUSCI_A_UART_receiveData(EUSCI_A1_BASE);
         pcBuffer[iLen] = RXData;
 
         //
