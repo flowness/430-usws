@@ -363,6 +363,13 @@ int main(void)
     volatile USS_message_code code;
     double totalVolume=0;
     double AvrgFlow=0;
+
+    double totalVolumeEVM=0;
+    double AvrgFlowEMV=0;
+    int MEAS_NUMBER = 5;
+    double EVMcoefficient = 0.2;//2/(1+MEAS_NUMBER);// or 1/MEAS_NUMBER;
+
+
     //float LiterPerMinuteFactor = 1;
     float currentFloat=0;
     unsigned char seconds=0;
@@ -373,8 +380,11 @@ int main(void)
     char    HourString[3]={0};
     char    MinuteString[3]={0};
     char    SecondString[3]={0};
+    char float_ResultRaw[32]={0};
     char float_Result[32]={0};
     char float_totalResult[32]={0};
+    char float_totalResultEVM[32]={0};
+
     Calendar currentTime;
     int US_MeaseCountTotal=0;
     int US_CurrentMeaseCountSuccess=0;
@@ -478,7 +488,7 @@ int main(void)
         code = USS_startUltrasonicMeasurement(
                 &gUssSWConfig, USS_capture_power_mode_low_power_mode_0);
 
-        debugPrintSamples(USS_getUPSPtr(),USS_getDNSPtr(),gUssSWConfig.captureConfig->sampleSize);
+        //debugPrintSamples(USS_getUPSPtr(),USS_getDNSPtr(),gUssSWConfig.captureConfig->sampleSize);
 
         if (code != USS_message_code_no_error)
         {
@@ -502,6 +512,15 @@ int main(void)
             {
                 //totalVolume+=algorithms_Results.volumeFlowRate;
                 AvrgFlow+=algorithms_Results.volumeFlowRate;
+                // using EMV: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+
+                if (AvrgFlowEMV == 0)
+                    //first time
+                    AvrgFlowEMV = algorithms_Results.volumeFlowRate;
+                else
+                    AvrgFlowEMV = EVMcoefficient * algorithms_Results.volumeFlowRate + (1 - EVMcoefficient) * AvrgFlowEMV;
+
+
 
                 US_CurrentMeaseCountSuccess++;
             }
@@ -535,14 +554,28 @@ int main(void)
 
 
                 //ftoa(algorithms_Results.volumeFlowRate,float_Result,6);
+                currentFloat/=60;
+                ftoa(currentFloat,float_ResultRaw,6);
+
+                if (currentFloat < 0.005) // 18 liter per hour.  need to be 0.000275 for 1 liter per hour
+                    currentFloat = 0;
+
                 ftoa(currentFloat,float_Result,6);
 
-                currentFloat/=60;
                 totalVolume+=currentFloat;
                 dtoa(totalVolume,float_totalResult,6);
 
+                //totalVolumeEVM+=AvrgFlowEMV/60;
+                //dtoa(totalVolumeEVM,float_totalResultEVM,6);
+
+
                 //20180514T194646Z
-                Report("{ \"measurementDate\": \"%s%s%sT%s%s%sZ\", \"measurementInterval\": %d, \"measurementAmount\": %s, \"moduleSN\": \"MSP430ABCD\", \"totalCount\": %s, \"US_MeaseCountTotal\": %d, \"USmeasErrorsCount\": %d, \"USalgorithmErrorsCount\": %d}\n\r",YearString,MonthString,DayString,HourString,MinuteString,SecondString,US_CurrentMeaseCountSuccess,float_Result,float_totalResult, US_MeaseCountTotal, USmeasErrorsCount, USalgorithmErrorsCount);
+                Report("{ \"SN\": \"MSP430ABCD\", \"Timestamp\": \"%s%s%sT%s%s%sZ\", \"Meas #\": %d, \"measFlowRaw(L\/S)\": %s, \"measFlow(L\/S)\": %s, \"TotalVolume\": %sL}\n\r",
+                       YearString,MonthString,DayString,HourString,MinuteString,SecondString,
+                       US_CurrentMeaseCountSuccess,
+                       float_ResultRaw,
+                       float_Result,
+                       float_totalResult);
             }
             else
             {
@@ -551,6 +584,7 @@ int main(void)
 
             US_CurrentMeaseCountSuccess=0;
             AvrgFlow=0;
+            AvrgFlowEMV=0;
             currentFloat=0;
             USmeasErrorsCount = 0;
             USalgorithmErrorsCount = 0;

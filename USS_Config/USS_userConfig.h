@@ -124,7 +124,7 @@ extern "C" {
 #define USS_DIAGNOSTIC_MODE                           USS_diagnostics_mode_0
 #define USS_ACOUSTIC_LENGTH                           70
 #define USS_TRANSDUCER_FREQ                           1030000
-#define USS_VOLUME_SCALE_FACTOR                       15986841
+#define USS_VOLUME_SCALE_FACTOR                       1.2742e7//15986841
 #define USS_CH0_DRIVE_STRENGHT                        USS_measurement_drive_strength_pre_trimmed_drive
 #define USS_CH1_DRIVE_STRENGHT                        USS_measurement_drive_strength_pre_trimmed_drive
 #define USS_PAUSE_STATE                               USS_measurement_pause_state_low
@@ -205,7 +205,7 @@ extern "C" {
 #define USS_ALG_ABS_TOF_INTERVAL                      1
 #define USS_ALG_ADC_ADDITIONAL_CAP_DLY                0.0
 #define USS_ALG_CORR_VAL_THRSH_CHK_FACT               0.05
-#define USS_ALG_DCOFFSET                              -1.75E-10
+#define USS_ALG_DCOFFSET                              -0.005E-10
 #define USS_ALG_ENABLE_WINDOWING                      true
 #define USS_ALG_MAX_RATIO_PEAK_2_PEAK_VAR             0.2
 #define USS_ALG_NUM_CYCLES_SEARCH_CORR                2
